@@ -11,7 +11,6 @@ namespace WordAutomation
         {
             Application wordApp = new Application();
             Document doc = null;
-
             try
             {
                 // Replace with your folder path
