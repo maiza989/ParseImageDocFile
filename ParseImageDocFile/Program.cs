@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.InteropServices;
 using Microsoft.Office.Interop.Word;
+using Range = Microsoft.Office.Interop.Word.Range;
 
 namespace WordAutomation
 {
@@ -11,64 +13,74 @@ namespace WordAutomation
         {
             Application wordApp = new Application();
             Document doc = null;
+            string imagePath = @"\\10.0.2.12\users\malghamgham\Desktop\My work - Maitham\GIF\Logo\logo.png";
+            string folderPath = @"\\10.0.2.12\users\malghamgham\Desktop\My work - Maitham\Projects\TestFolder";
+            // List to hold shapes to delete
+            List<InlineShape> shapesToDelete = new List<InlineShape>();
+
             try
             {
-                // Replace with your folder path
-                string folderPath = @"\\10.0.2.12\users\malghamgham\Desktop\My work - Maitham\Projects\PraseTestFolder";
-
-                // Check if the folder exists
+                                                                                                                                            // Check if the folder exists
                 if (Directory.Exists(folderPath))
                 {
-                    // Get all .doc files in the folder
-                    string[] files = Directory.GetFiles(folderPath, "*.doc");
-
-                    // Process each .doc file
+                    string[] files = Directory.GetFiles(folderPath, "*.doc");                                                               // Get all .doc files in the folder
+                                                                                                                                            // Process each .doc file
                     foreach (string filePath in files)
                     {
-                        Console.WriteLine($"\nProcessing File: {filePath}");
-
-                        bool pictureFound = false; // Reset for each document
-                        // Open the Word document
-                        doc = wordApp.Documents.Open(filePath);
-                        Console.WriteLine($"\tOpened File: {filePath}");
-
-                        // List to hold shapes to delete
-                        List<InlineShape> shapesToDelete = new List<InlineShape>();
-
-                        // Iterate through all inline shapes in the document
-                        foreach (InlineShape shape in doc.InlineShapes)
+                        Console.WriteLine($"\nProcessing File: {Path.GetFileName(filePath)}");
+                        try
                         {
-                            // Check if the shape is a picture
-                            if (shape.Type == WdInlineShapeType.wdInlineShapePicture)
+                            doc = wordApp.Documents.Open(filePath);                                                                         // Open the Word document
+                            Console.WriteLine($"\tOpened File: {Path.GetFileName(filePath)}");
+                            shapesToDelete.Clear();                                                                                         // Reset shapes to delete for each document
+
+                            foreach (Section section in doc.Sections)
                             {
-                                // Replace the picture with the new one
-                                shape.Select();
-                                // Add the new picture from file
-                                InlineShape newShape = wordApp.Selection.InlineShapes.AddPicture(@"\\10.0.2.12\users\malghamgham\Desktop\My work - Maitham\GIF\Logo\logo.png");
-
-                                // Add the shape to delete list
-                                shapesToDelete.Add(shape);
-                                Console.WriteLine($"\tImage Changed in file: {filePath}");
-                                pictureFound = true;
+                                Range range = section.Range;
+                                                                                                                                           // Iterate through all inline shapes in the section
+                                foreach (InlineShape shape in section.Range.InlineShapes)
+                                {
+                                                                                                                                           // Check if the shape is a picture
+                                    if (shape.Type == WdInlineShapeType.wdInlineShapePicture)
+                                    {
+                                        shape.Select();
+                                        shapesToDelete.Add(shape);                                                                         // Add the shape to delete list
+                                        shape.Range.InlineShapes.AddPicture(imagePath);
+                                        
+                                        Console.WriteLine($"\t\tImage Changed in file: {Path.GetFileName(filePath)}");
+                                    }
+                                }
                             }
+                            if (shapesToDelete.Count == 0)
+                            {
+                                Console.WriteLine($"\t\tNo Picture Found in doc {Path.GetFileName(filePath)}");
+                            }
+                            foreach (InlineShape shapeToDelete in shapesToDelete)
+                            {
+                                shapeToDelete.Delete();
+                            }
+                            doc.Save();                                                                                                    // Save the changes
+                            doc.Close();                                                                                                   // Close the document
+                            Console.WriteLine($"\t\t\tClosed File: {Path.GetFileName(filePath)}");
+                                                                                                                                           // Delete the old pictures after iterating through all shapes
+                            
                         }
-
-                        if (!pictureFound)
+                        catch (Exception ex)
                         {
-                            Console.WriteLine($"\tNo Picture Found in doc {filePath}");
+                            Console.WriteLine($"Error: processing file {Path.GetFileName(filePath)}: {ex.Message}");
+                            doc.Save();
+                            doc.Close();
+                            Console.WriteLine($"\t\t\tClosed File: {Path.GetFileName(filePath)}");
                         }
-
-                        // Delete the old pictures after iterating through all shapes
-                        foreach (InlineShape shapeToDelete in shapesToDelete)
+                        finally
                         {
-                            shapeToDelete.Delete();
+                                                                                                                                            // Release COM objects
+                            if (doc != null)
+                            {
+                                Marshal.ReleaseComObject(doc);
+                            }
+                            //Marshal.ReleaseComObject(doc);
                         }
-
-                        // Save the changes
-                        doc.Save();
-                        // Close the document
-                        doc.Close();
-                        Console.WriteLine($"\tClosed File: {filePath}");
                     }
                 }
                 else
@@ -82,8 +94,12 @@ namespace WordAutomation
             }
             finally
             {
-                // Quit Word application
-                wordApp?.Quit();
+                // Release COM objects
+                if (wordApp != null)
+                {
+                    wordApp.Quit();
+                    Marshal.ReleaseComObject(wordApp);
+                }
             }
         }
     }
