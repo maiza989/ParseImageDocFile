@@ -146,7 +146,7 @@ namespace WordAutomation
 {
     class Program
     {
-        private string imagePath = @"\\10.0.2.12\users\malghamgham\Desktop\My work - Maitham\GIF\Logo\logo2.jpg";
+        private string imagePath = @"\\10.0.2.12\users\malghamgham\Desktop\My work - Maitham\GIF\Logo\Logo Final Small-Edited.jpg";
         private string folderPath = @"\\10.0.2.12\users\malghamgham\Desktop\My work - Maitham\Projects\TestFolder";
         int imageCount = 0;
         int fileCount = 0;
@@ -160,7 +160,7 @@ namespace WordAutomation
             { 
                 if (Directory.Exists(folderPath))                                                                               // Check if Folder exist
                 {
-                    string[] files = Directory.GetFiles(folderPath, "*.doc");                                                   // Get all .doc files in folder
+                    string[] files = Directory.GetFiles(folderPath, "*.doc*");                                                  // Get all .doc or .docx files in folder
                     foreach (string filePath in files)
                     {
                         ProcessDocument(filePath);                                                                              // Process each files in the folder
@@ -226,6 +226,7 @@ namespace WordAutomation
                             imageCount++;                                                                                                       // Increment image count if a picture is found
                             DocPicture newPicture = docObj as DocPicture;                                                                       // Create a new DocPicture with the desired image                     
                             newPicture.LoadImage(Image.FromFile(imagePath));                                                                    // Replace image found in document with new image
+                          //  newPicture.HorizontalAlignment = ShapeHorizontalAlignment.Center;                                                   // Set the alignment of the picture to center horizontally
                             Console.ForegroundColor = ConsoleColor.DarkCyan;
                             Console.WriteLine($"\tChanged Image \"{imageCount}\" in file: {Path.GetFileName(filePath)}");
                             Console.ForegroundColor = ConsoleColor.Gray;
