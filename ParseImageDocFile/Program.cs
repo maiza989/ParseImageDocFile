@@ -1,4 +1,8 @@
-﻿/*using System.Runtime.InteropServices;
+﻿/*
+ *                                                                                  --Microsoft.Office.Interop.Word Attempt--
+ *                                        This code fucntion correctly, but some does not pick some images if the Warp Text format of the image is not "In line with Text"
+ * 
+ * using System.Runtime.InteropServices;
 using Microsoft.Office.Interop.Word;
 
 namespace WordAutomation
@@ -131,107 +135,11 @@ namespace WordAutomation
 
 /*
  * 
- *                                                                          --XML Attempt-- 
- *                                                                          
- *  Do not work since I am working with .doc files.                                                                          
- */
-
-/*using DocumentFormat.OpenXml.Packaging;
-using DocumentFormat.OpenXml.Wordprocessing;
-using Aspose.Words;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using Document = Aspose.Words.Document;
-
-namespace WordAutomation
-{
-    class Program
-    {
-        static void Main(string[] args)
-        {
-            string folderPath = @"\\10.0.2.12\users\malghamgham\Desktop\My work - Maitham\Projects\TestFolder";
-            string imagePath = @"\\10.0.2.12\users\malghamgham\Desktop\My work - Maitham\GIF\Logo\logo2.jpg";
-
-            string folderDOCPath = @"\\10.0.2.12\users\malghamgham\Desktop\My work - Maitham\Projects\TestFolder\.doc";
-            string folderDOCXpath = @"\\10.0.2.12\users\malghamgham\Desktop\My work - Maitham\Projects\TestFolder\.docx";
-
-
-           // ConvertDocToDocx(folderDOCPath, folderDOCXpath);
-            ProcessDocuments(folderPath, imagePath);
-        }
-
-        static void ConvertDocToDocx(string docFilePath, string docxFilePath)
-        {
-            // Load the .doc file
-            Document doc = new Document(docFilePath);
-
-            // Save as .docx
-            doc.Save(docxFilePath, SaveFormat.Docx);
-        }
-
-        static void ProcessDocuments(string folderPath, string imagePath)
-        {
-            if (!Directory.Exists(folderPath))
-            {
-                Console.WriteLine("Folder not found.");
-                return;
-            }
-
-            string[] files = Directory.GetFiles(folderPath, "*.doc");
-            foreach (string filePath in files)
-            {
-                Console.WriteLine($"\nProcessing File: {Path.GetFileName(filePath)}");
-                try
-                {
-                    using (WordprocessingDocument doc = WordprocessingDocument.Open(filePath, true))
-                    {
-                        IEnumerable<ImagePart> imageParts = doc.MainDocumentPart.ImageParts.ToList();
-                        int imageCount = 0;
-                        foreach (ImagePart imagePart in imageParts)
-                        {
-                            try
-                            {
-                                ReplaceImage(imagePart, imagePath);
-                                imageCount++;
-                                Console.WriteLine($"\tImage \"{imageCount}\" Changed in file: {Path.GetFileName(filePath)}");
-                            }
-                            catch (Exception ex)
-                            {
-                                Console.WriteLine($"Error replacing image in file {Path.GetFileName(filePath)}: {ex.Message}");
-                            }
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Error: processing file {Path.GetFileName(filePath)}: {ex.Message}");
-                    Console.WriteLine($"Skipping the file: {Path.GetFileName(filePath)}");
-                }
-
-            }
-        }
-
-        static void ReplaceImage(ImagePart imagePart, string imagePath)
-        {
-            using (Stream imageStream = File.Open(imagePath, FileMode.Open))
-            {
-                imagePart.FeedData(imageStream);
-            }
-        }
-    }
-}
-*/
-
-/*
- * 
  *                                                                                          --Spire.doc Attempt--
  */
 using Spire.Doc;
 using Spire.Doc.Documents;
 using Spire.Doc.Fields;
-using System.Collections.Generic;
 using System.Drawing;
 
 namespace WordAutomation
@@ -240,110 +148,113 @@ namespace WordAutomation
     {
         private string imagePath = @"\\10.0.2.12\users\malghamgham\Desktop\My work - Maitham\GIF\Logo\logo2.jpg";
         private string folderPath = @"\\10.0.2.12\users\malghamgham\Desktop\My work - Maitham\Projects\TestFolder";
-        List<DocumentObject> objectsToRemove;
-        List<DocPicture> pictures = new List<DocPicture>();
-
-
+        int imageCount = 0;
+        int fileCount = 0;
         public Program() 
         {
-            objectsToRemove = new List<DocumentObject>();
-        }
-
-
+            
+        }// end of Program construction
         public void Run()
         {
             try
-            {
-                if (Directory.Exists(folderPath))
+            { 
+                if (Directory.Exists(folderPath))                                                                               // Check if Folder exist
                 {
-                    string[] files = Directory.GetFiles(folderPath, "*.doc");
+                    string[] files = Directory.GetFiles(folderPath, "*.doc");                                                   // Get all .doc files in folder
                     foreach (string filePath in files)
                     {
-                        ProcessDocument(filePath);
-                    }
-                }
+                        ProcessDocument(filePath);                                                                              // Process each files in the folder
+                    }// end of foreach
+                }// end of if statement
                 else
                 {
                     Console.WriteLine("Folder not found.");
-                }
-            }
+                }// end of if-else
+            }// end of Try
             catch (Exception ex)
             {
+                Console.ForegroundColor = ConsoleColor.DarkRed;
                 Console.WriteLine("Error: " + ex.Message);
-            }
-        }
+                Console.ForegroundColor = ConsoleColor.Gray;
+            }// end of Catch
+        }// end of Run
 
         private void ProcessDocument(string filePath)
         {
-            Console.WriteLine($"\nProcessing File: {Path.GetFileName(filePath)}");
+            fileCount ++;
+            Console.WriteLine($"\nProcessing File \"{fileCount}\": {Path.GetFileName(filePath)}");
             try
             {
                 Document doc = new Document();
-                doc.LoadFromFile(filePath);
+                doc.LoadFromFile(filePath);                                                                                        // Load file into Document Object
 
-                foreach (Section section in doc.Sections)
+                if( doc != null )
                 {
-                    ProcessSection(section, filePath);
+                    foreach (Section section in doc.Sections)
+                    {
+                        ProcessSection(section, filePath);                                                                         // Go through each section in side the Word document
+                    }// end of  outter-outter foreach
+                    if(imageCount == 0)
+                    {
+                        Console.ForegroundColor = ConsoleColor.DarkRed;
+                        Console.WriteLine($"\t\t\tNo Picture Found in doc {Path.GetFileName(filePath)}");
+                        Console.ForegroundColor = ConsoleColor.Gray;
+                    }// end of if-statement
+                    doc.SaveToFile(filePath, FileFormat.Doc);
+                    imageCount = 0;
+                    Console.WriteLine($"\t\t\tClosed File: {Path.GetFileName(filePath)}");
                 }
-                if(objectsToRemove.Count == 0)
-                {
-                    Console.WriteLine($"\t\tNo Picture Found in doc {Path.GetFileName(filePath)}");
-                }
-                // Remove the objects after iterating through all paragraphs
-                foreach (var objToRemove in objectsToRemove)
-                {
-                    // Remove the object from its parent collection
-                    objToRemove.Owner.ChildObjects.Remove(objToRemove);
-                }
-                doc.SaveToFile(filePath, FileFormat.Doc);
-
-                Console.WriteLine($"\t\t\tClosed File: {Path.GetFileName(filePath)}");
-            }
+            }// end of Try
             catch (Exception ex)
             {
-                Console.WriteLine($"Error: processing file {Path.GetFileName(filePath)}: {ex.Message}");
-            }
-        }
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"!!!Error: processing file {Path.GetFileName(filePath)}: {ex.Message}!!!");
+                Console.ForegroundColor = ConsoleColor.Gray;
+            }// end of catch
+        }// end of ProcessDocument
 
         private void ProcessSection(Section section, string filePath)
         {
             try
-            {
-                int imageCount = 0;
-                
+             {
                 foreach (Paragraph paragraph in section.Paragraphs)
                 {
                     foreach (DocumentObject docObj in paragraph.ChildObjects)
                     {
                         if (docObj.DocumentObjectType == DocumentObjectType.Picture)
                         {
-                            imageCount++; // Increment image count if a picture is found
+                            imageCount++;                                                                                                       // Increment image count if a picture is found
+                            DocPicture newPicture = docObj as DocPicture;                                                                       // Create a new DocPicture with the desired image                     
+                            newPicture.LoadImage(Image.FromFile(imagePath));                                                                    // Replace image found in document with new image
+                            Console.ForegroundColor = ConsoleColor.DarkCyan;
+                            Console.WriteLine($"\tChanged Image \"{imageCount}\" in file: {Path.GetFileName(filePath)}");
+                            Console.ForegroundColor = ConsoleColor.Gray;
 
-                            // Create a new DocPicture with the desired image
-                            DocPicture newPicture = docObj as DocPicture;                         
-                            newPicture.LoadImage(Image.FromFile(imagePath));
-                            Console.WriteLine($"\t\tChange Image \"{imageCount}\" in file: {Path.GetFileName(filePath)}");
- 
-                        }
-                    }
+                        }// end of if-statement
+                    }// end of inner for each
+                }// end of outter foreach
+                if(imageCount > 0)
+                {
+                Console.ForegroundColor = ConsoleColor.DarkMagenta;
+                Console.WriteLine($"\t\tTotal images found in {Path.GetFileName(filePath)}: {imageCount}");
+                Console.ForegroundColor = ConsoleColor.Gray;
                 }
-                
-                Console.WriteLine($"Total images found in {Path.GetFileName(filePath)}: {imageCount}");
-            }
+            }// end of Try
             catch (Exception ex)
             {
+                Console.ForegroundColor = ConsoleColor.DarkRed;
                 Console.WriteLine($"Error looking for a picture in file {Path.GetFileName(filePath)}: {ex.Message}");
-            }
-        }
+                Console.ForegroundColor = ConsoleColor.Gray;
+            }// end of catch
+        }// end of ProcessSection
 
         static void Main(string[] args)
         {
             Program program = new Program();
-
             program.Run();
-        }
-    }
-}
+        }// end of main method
+    }// end of Program Class
+}// end of namespace
 
 
 
