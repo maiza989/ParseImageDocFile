@@ -13,14 +13,16 @@ namespace WordAutomation
 {
     class Program
     {
-        private string imagePath = @"\\10.0.2.12\users\malghamgham\Desktop\My work - Maitham\GIF\Logo\Logo Final Small-Edited.jpg";
-        private string folderPath = @"\\10.0.2.12\users\malghamgham\Desktop\My work - Maitham\Projects\TestFolder";
-        private string errorTextboxFolderPath = @"\\10.0.2.12\users\malghamgham\Desktop\My work - Maitham\Projects\TestFolder\ErrorTest\TextboxError";
-        private string errorNullRefFolderPath = @"\\10.0.2.12\users\malghamgham\Desktop\My work - Maitham\Projects\TestFolder\ErrorTest\NullReferenceError";
-        int imageCount = 0;
-        int fileCount = 0;
-        bool isMoved = false;
-        Document doc;
+        private string imagePath = @"\\10.0.2.12\users\malghamgham\Desktop\My work - Maitham\GIF\Logo\Logo Final Small-Edited.jpg";                                             // Image Path                                               
+        private string folderPath = @"\\10.0.2.12\users\malghamgham\Desktop\My work - Maitham\Projects\TestFolder";                                                             // Original Word Documents Folder
+        private string errorTextboxFolderPath = @"\\10.0.2.12\users\malghamgham\Desktop\My work - Maitham\Projects\TestFolder\ErrorTest\TextboxError";                          // **Optional** Destination path for file with Textbox in them
+        private string errorNullRefFolderPath = @"\\10.0.2.12\users\malghamgham\Desktop\My work - Maitham\Projects\TestFolder\ErrorTest\NullReferenceError";                    // **Optional** Destination path for file throwing null reference error
+        int imageCount = 0;                                                                                                                                                     // Image changed counter
+        int fileCount = 0;                                                                                                                                                      // File processed counter
+        bool isMoved = false;                                                                                                                                                   // Boolean check if file is moved.
+        bool isImageChanged = false;                                                                                                                                            // Boolean check if image change in file
+        Document doc;                                                                                                                                                           // Document Object
+
 
         public Program() 
         {
@@ -28,6 +30,7 @@ namespace WordAutomation
         }// end of Program construction
         public void Run()
         {
+            Console.ForegroundColor = ConsoleColor.Gray;
             try
             { 
                 if (Directory.Exists(folderPath))                                                                               // Check if Folder exist
@@ -53,19 +56,18 @@ namespace WordAutomation
 
         private void ProcessDocument(string filePath)
         {
+
             fileCount ++;
             Console.WriteLine($"\nProcessing File \"{fileCount}\": {Path.GetFileName(filePath)}");
             try
             {
-                //Document doc = new Document();
-                
                 if( doc != null && doc.Sections != null )
                 {
-                    doc.LoadFromFile(filePath);                                                                                        // Load file into Document Object
+                    doc.LoadFromFile(filePath);                                                                                                                             // Load file into Document Object
 
                     foreach (Section section in doc.Sections)
                     {
-                        ProcessSection(section, filePath);                                                                         // Go through each section in side the Word document
+                        ProcessSection(section, filePath);                                                                                                                  // Go through each section in side the Word document
                     }// end of  outter-outter foreach
                     if(imageCount == 0 && !isMoved)
                     {
@@ -73,23 +75,31 @@ namespace WordAutomation
                         Console.WriteLine($"\t\t\tNo Picture Found in doc {Path.GetFileName(filePath)}");
                         Console.ForegroundColor = ConsoleColor.Gray;
                     }// end of if-statement
-
-                    if(!isMoved)
+                    if(!isMoved)                                                                                                                                            // If isMoved is true dont save file. This is a check for if file was moved an converted to .docx 
                     {
-                    // Determine the file format based on the file extension
-                    FileFormat fileFormat = filePath.EndsWith(".docx", StringComparison.OrdinalIgnoreCase) ? FileFormat.Docx : FileFormat.Doc;
-                    doc.SaveToFile(filePath, fileFormat);
-                    }
-                    
+                        FileFormat fileFormat = filePath.EndsWith(".docx", StringComparison.OrdinalIgnoreCase) ? FileFormat.Docx : FileFormat.Doc;                          // Determine the file format based on the file extension
+                        doc.SaveToFile(filePath, fileFormat);  
+                    }// end of if-statement isMoved
+
                     Console.WriteLine($"\t\t\tClosed File: {Path.GetFileName(filePath)}");
-                }
+                    imageCount = 0;
+                    isMoved = false;
+                    
+                }// end of If-Statement
             }// end of Try
-            catch (Exception ex)
+            catch (NullReferenceException ex)
             {
                 Console.ForegroundColor = ConsoleColor.Red;
                 Console.WriteLine($"!!!Error processing file {Path.GetFileName(filePath)}: {ex.Message}!!!");
                 Console.ForegroundColor = ConsoleColor.Gray;
                 MoveFileToTargetFolder(filePath);
+            }// end of catch
+            catch (Exception ex)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"!!!Error processing file {Path.GetFileName(filePath)}: {ex.Message}!!!");
+                Console.ForegroundColor = ConsoleColor.Gray;
+                
             }// end of catch
         }// end of ProcessDocument
 
@@ -103,11 +113,13 @@ namespace WordAutomation
                     {
                         if (docObj.DocumentObjectType == DocumentObjectType.Picture)
                         {  
+                            isImageChanged = true;
                             imageCount++;                                                                                                       // Increment image count if a picture is found
                             DocPicture newPicture = docObj as DocPicture;                                                                       // Create a new DocPicture with the desired image                     
                             newPicture.LoadImage(Image.FromFile(imagePath));                                                                    // Replace image found in document with new image
                             Console.ForegroundColor = ConsoleColor.DarkCyan;
                             Console.WriteLine($"\tChanged Image \"{imageCount}\" in file: {Path.GetFileName(filePath)}");
+                            Console.ForegroundColor = ConsoleColor.Gray;
                         }// end of if-statement
                         else if(docObj.DocumentObjectType == DocumentObjectType.TextBox) 
                         {
@@ -118,12 +130,12 @@ namespace WordAutomation
                         }
                     }// end of inner for each
                 }// end of outter foreach
-                if(imageCount > 0)
+                if(isImageChanged == true && imageCount > 0)
                 {
                     Console.ForegroundColor = ConsoleColor.DarkMagenta;
                     Console.WriteLine($"\t\tTotal images found in {Path.GetFileName(filePath)}: {imageCount}");
                     Console.ForegroundColor = ConsoleColor.Gray;
-                    imageCount = 0;
+                    isImageChanged = false;
                 }
             }// end of Try
             catch (Exception ex)
@@ -143,7 +155,7 @@ namespace WordAutomation
             {
                 string fileName = Path.GetFileName(filePath);
                 string targetFilePath = Path.Combine(errorNullRefFolderPath, fileName);
-                File.Move(filePath, targetFilePath);                                                                                            // Move file from originl path to target path
+                File.Move(filePath, targetFilePath);                                                                                               // Move file from originl path to target path
                 Console.WriteLine($"\t\tFile \"{fileName}\" moved to Error folder.");
             }
             catch (Exception ex)
@@ -165,12 +177,12 @@ namespace WordAutomation
                 string fileName = Path.GetFileNameWithoutExtension(filePath);
                 string targetFilePath = Path.Combine(errorTextboxFolderPath, $"{fileName}.docx");
 
-                if (!isMoved)
+                if (!isMoved)                                                                                                                      // Save the file with .docx extension
                 {
-                // Save the file with .docx extension
-                File.Move(filePath, targetFilePath);                                                                                           // Move file from originl path to target path
-                    doc.SaveToFile(targetFilePath, FileFormat.Docx);                                                                           // Covert original File to .docx format
-                    isMoved = true;
+                    File.Move(filePath, targetFilePath);                                                                                           // Move file from originl path to target path
+                    doc.SaveToFile(targetFilePath, FileFormat.Docx);                                                                               // Covert original File to .docx format
+                    isMoved = true;                                                                                                                 
+                    imageCount = 0;
                 }
                 Console.ForegroundColor = ConsoleColor.Green;
                 Console.WriteLine($"\t\tFile \"{Path.GetFileName(filePath)}\" converted to .docx and saved in target folder.");
@@ -179,7 +191,7 @@ namespace WordAutomation
             catch (Exception ex)
             {
                 Console.ForegroundColor = ConsoleColor.DarkRed;
-                Console.WriteLine($"Error converting file: {ex.Message}");
+                Console.WriteLine($"\t\t\tError converting file: {ex.Message}");
                 Console.ForegroundColor = ConsoleColor.Gray;
             }
         }
