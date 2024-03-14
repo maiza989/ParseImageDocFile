@@ -15,14 +15,15 @@ namespace WordAutomation
     {
         private string imagePath = @"\\10.0.2.12\users\malghamgham\Desktop\My work - Maitham\GIF\Logo\Logo Final Small-Edited.jpg";                                             // Image Path                                               
         private string folderPath = @"\\10.0.2.12\users\malghamgham\Desktop\My work - Maitham\Projects\TestFolder";                                                             // Original Word Documents Folder
+        private string backupPath = @"\\10.0.2.12\users\malghamgham\Desktop\My work - Maitham\Projects\TestFolder\Backup";                                                      // **Optional** Destination path for file backup 
         private string errorTextboxFolderPath = @"\\10.0.2.12\users\malghamgham\Desktop\My work - Maitham\Projects\TestFolder\ErrorTest\TextboxError";                          // **Optional** Destination path for file with Textbox in them
         private string errorNullRefFolderPath = @"\\10.0.2.12\users\malghamgham\Desktop\My work - Maitham\Projects\TestFolder\ErrorTest\NullReferenceError";                    // **Optional** Destination path for file throwing null reference error
         int imageCount = 0;                                                                                                                                                     // Image changed counter
         int fileCount = 0;                                                                                                                                                      // File processed counter
+        int imageMaxWidth = 200;                                                                                                                                                // Variable store the max width the image you want to change has. 
         bool isMoved = false;                                                                                                                                                   // Boolean check if file is moved.
         bool isImageChanged = false;                                                                                                                                            // Boolean check if image change in file
         Document doc;                                                                                                                                                           // Document Object
-
 
         public Program() 
         {
@@ -49,14 +50,13 @@ namespace WordAutomation
             catch (Exception ex)
             {
                 Console.ForegroundColor = ConsoleColor.DarkRed;
-                Console.WriteLine("Error: " + ex.Message);
+                Console.WriteLine("Error finding folder: " + ex.Message);
                 Console.ForegroundColor = ConsoleColor.Gray;
             }// end of Catch
         }// end of Run
 
         private void ProcessDocument(string filePath)
         {
-
             fileCount ++;
             Console.WriteLine($"\nProcessing File \"{fileCount}\": {Path.GetFileName(filePath)}");
             try
@@ -64,6 +64,7 @@ namespace WordAutomation
                 if( doc != null && doc.Sections != null )
                 {
                     doc.LoadFromFile(filePath);                                                                                                                             // Load file into Document Object
+                    CreateCopyOfFile(folderPath, backupPath);
 
                     foreach (Section section in doc.Sections)
                     {
@@ -72,7 +73,7 @@ namespace WordAutomation
                     if(imageCount == 0 && !isMoved)
                     {
                         Console.ForegroundColor = ConsoleColor.DarkRed;
-                        Console.WriteLine($"\t\t\tNo Picture Found in doc {Path.GetFileName(filePath)}");
+                        Console.WriteLine($"\tNo Picture Found in doc {Path.GetFileName(filePath)}");
                         Console.ForegroundColor = ConsoleColor.Gray;
                     }// end of if-statement
                     if(!isMoved)                                                                                                                                            // If isMoved is true dont save file. This is a check for if file was moved an converted to .docx 
@@ -113,13 +114,16 @@ namespace WordAutomation
                     {
                         if (docObj.DocumentObjectType == DocumentObjectType.Picture)
                         {  
-                            isImageChanged = true;
-                            imageCount++;                                                                                                       // Increment image count if a picture is found
                             DocPicture newPicture = docObj as DocPicture;                                                                       // Create a new DocPicture with the desired image                     
-                            newPicture.LoadImage(Image.FromFile(imagePath));                                                                    // Replace image found in document with new image
-                            Console.ForegroundColor = ConsoleColor.DarkCyan;
-                            Console.WriteLine($"\tChanged Image \"{imageCount}\" in file: {Path.GetFileName(filePath)}");
-                            Console.ForegroundColor = ConsoleColor.Gray;
+                            if(newPicture.Width < imageMaxWidth)
+                            {
+                                isImageChanged = true;
+                                imageCount++;                                                                                                       // Increment image count if a picture is found
+                                newPicture.LoadImage(Image.FromFile(imagePath));                                                                    // Replace image found in document with new image
+                                Console.ForegroundColor = ConsoleColor.DarkCyan;
+                                Console.WriteLine($"\tChanged Image \"{imageCount}\" in file: {Path.GetFileName(filePath)}");
+                                Console.ForegroundColor = ConsoleColor.Gray;
+                            }
                         }// end of if-statement
                         else if(docObj.DocumentObjectType == DocumentObjectType.TextBox) 
                         {
@@ -140,7 +144,7 @@ namespace WordAutomation
             }// end of Try
             catch (Exception ex)
             {
-                Console.ForegroundColor = ConsoleColor.DarkRed;
+                Console.ForegroundColor = ConsoleColor.Red;
                 Console.WriteLine($"\t\tError looking for a picture in file {Path.GetFileName(filePath)}: {ex.Message}\n\tMoving to \"Error\" folder");
                 Console.ForegroundColor = ConsoleColor.Gray;
             }// end of catch
@@ -156,12 +160,12 @@ namespace WordAutomation
                 string fileName = Path.GetFileName(filePath);
                 string targetFilePath = Path.Combine(errorNullRefFolderPath, fileName);
                 File.Move(filePath, targetFilePath);                                                                                               // Move file from originl path to target path
-                Console.WriteLine($"\t\tFile \"{fileName}\" moved to Error folder.");
+                Console.WriteLine($"\tFile \"{fileName}\" moved to Error folder.");
             }
             catch (Exception ex)
             {
-                Console.ForegroundColor = ConsoleColor.DarkRed;
-                Console.WriteLine($"\t\tError moving file: {ex.Message}");
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"\tError moving file: {ex.Message}");
                 Console.ForegroundColor = ConsoleColor.Gray;
             }
         }
@@ -190,8 +194,33 @@ namespace WordAutomation
             }
             catch (Exception ex)
             {
-                Console.ForegroundColor = ConsoleColor.DarkRed;
-                Console.WriteLine($"\t\t\tError converting file: {ex.Message}");
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"\t\tError converting file: {ex.Message}");
+                Console.ForegroundColor = ConsoleColor.Gray;
+            }
+        }
+
+        /*
+         * *****NOT USED*****
+         * A method to copy files being open and create a copy on the backup folder.
+         */
+        private void CreateCopyOfFile(string sourceFilePath, string destinationFolderPath)
+        {
+            try
+            {
+                string fileName = Path.GetFileName(sourceFilePath);
+                string destinationFilePath = Path.Combine(destinationFolderPath, fileName);
+
+                File.Copy(sourceFilePath, destinationFilePath, true); // Set overwrite to true to overwrite existing files
+
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine($"\tFile \"{fileName}\" copied to {destinationFolderPath}");
+                Console.ForegroundColor = ConsoleColor.Gray;
+            }
+            catch (Exception ex)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"Error copying file: {ex.Message}");
                 Console.ForegroundColor = ConsoleColor.Gray;
             }
         }
