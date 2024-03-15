@@ -34,6 +34,10 @@ namespace WordAutomation
         {
             doc = new Document();
         }// end of Program construction
+
+        /*
+         * A method that make sure folder exist and files in that certain folder exists.
+         */
         public void Run()
         {
             Console.ForegroundColor = ConsoleColor.Gray;
@@ -69,6 +73,9 @@ namespace WordAutomation
             }// end of Catch
         }// end of Run
 
+        /*
+         * A method that start the file processing of each section of the word documents.
+         */
         private void ProcessDocument(string filePath)
         {
             fileCount ++;
@@ -116,6 +123,9 @@ namespace WordAutomation
             }// end of catch
         }// end of ProcessDocument
 
+        /*
+         * A method that process each paragraph of the word documents. This method will detect images or textboxes and actions will be taken based on that. 
+         */
         private void ProcessSection(Section section, string filePath)
         {
             try
@@ -188,6 +198,9 @@ namespace WordAutomation
 
         /*
          * A method that move move a file to saparate folder and conver it the file to .docx format. 
+         * This Method was created due to some files having textbox and when doc spire goes through the code and save the files as .doc file. It breaks the format. 
+         * Saving the file as .docx seems to perserve the format of the templates.
+         * Manual insepction might be required. 
          */
         private void ConvertToDocx(string filePath)
         {
