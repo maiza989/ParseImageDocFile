@@ -18,10 +18,14 @@ namespace WordAutomation
         private string backupPath = @"\\10.0.2.12\users\malghamgham\Desktop\My work - Maitham\Projects\TestFolder\Backup";                                                      // **Optional** Destination path for file backup 
         private string errorTextboxFolderPath = @"\\10.0.2.12\users\malghamgham\Desktop\My work - Maitham\Projects\TestFolder\ErrorTest\TextboxError";                          // **Optional** Destination path for file with Textbox in them
         private string errorNullRefFolderPath = @"\\10.0.2.12\users\malghamgham\Desktop\My work - Maitham\Projects\TestFolder\ErrorTest\NullReferenceError";                    // **Optional** Destination path for file throwing null reference error
+
         int imageCount = 0;                                                                                                                                                     // Image changed counter
         int fileCount = 0;                                                                                                                                                      // File processed counter
-        int imageMaxWidth = 200;                                                                                                                                                // Variable store the max width the image you want to change has. 
-        int imageMinWidth = 100;
+        int imageMaxWidth = 250;                                                                                                                                                // Variable store the MAXIMUM width the image you want to change has. 
+        int imageMinWidth = 90;                                                                                                                                                 // Variable store the MINIMUM width the image you want to change has
+        int imageMaxHeight = 100;                                                                                                                                               // Variable store the MAXIMUM height the image you want to change has
+        int imageMinHeight = 40;                                                                                                                                                // Variable store the MINIMUM height the image you want to change has
+
         bool isMoved = false;                                                                                                                                                   // Boolean check if file is moved.
         bool isImageChanged = false;                                                                                                                                            // Boolean check if image change in file
         Document doc;                                                                                                                                                           // Document Object
@@ -35,14 +39,14 @@ namespace WordAutomation
             Console.ForegroundColor = ConsoleColor.Gray;
             try
             { 
-                if (Directory.Exists(folderPath))                                                                               // Check if Folder exist
+                if (Directory.Exists(folderPath))                                                                                    // Check if Folder exist
                 {
-                    string[] files = Directory.GetFiles(folderPath, "*.doc*");                                                  // Get all .doc or .docx files in folder
+                    string[] files = Directory.GetFiles(folderPath, "*.doc*");                                                       // Get all .doc or .docx files in folder
                     if(files.Length > 0)
                     {
                         foreach (string filePath in files)
                         {
-                            ProcessDocument(filePath);                                                                              // Process each files in the folder
+                            ProcessDocument(filePath);                                                                               // Process each files in the folder
                         }// end of foreach
                     }
                     else
@@ -123,11 +127,12 @@ namespace WordAutomation
                         if (docObj.DocumentObjectType == DocumentObjectType.Picture)
                         {  
                             DocPicture newPicture = docObj as DocPicture;                                                                           // Create a new DocPicture with the desired image                     
-                            if(newPicture.Width < imageMaxWidth && newPicture.Width > imageMinWidth)                                                // Only change the image the width is bigger than 100px and smaller than 200px
+                            if(newPicture.Width < imageMaxWidth && newPicture.Width > imageMinWidth 
+                                && newPicture.Height < imageMaxHeight && newPicture.Height > imageMinHeight)                                        // Only change the image the width is bigger than 90px and smaller than 250px and height smaller than 100px and larger than 50px
                             {
                                 isImageChanged = true;
                                 imageCount++;                                                                                                       // Increment image count if a picture is found
-                                newPicture.LoadImage(Image.FromFile(imagePath));                                                                     // Replace image found in document with new image
+                                newPicture.LoadImage(Image.FromFile(imagePath));                                                                    // Replace image found in document with new image
                                 Console.ForegroundColor = ConsoleColor.DarkCyan;
                                 Console.WriteLine($"\tChanged Image \"{imageCount}\" in file: {Path.GetFileName(filePath)}");
                                 Console.ForegroundColor = ConsoleColor.Gray;
@@ -167,16 +172,19 @@ namespace WordAutomation
             {
                 string fileName = Path.GetFileName(filePath);
                 string targetFilePath = Path.Combine(errorNullRefFolderPath, fileName);
+
                 File.Move(filePath, targetFilePath);                                                                                               // Move file from originl path to target path
+                Console.ForegroundColor = ConsoleColor.Green;
                 Console.WriteLine($"\tFile \"{fileName}\" moved to Error folder.");
-            }
+                Console.ForegroundColor = ConsoleColor.Gray;
+            }// end of try
             catch (Exception ex)
             {
                 Console.ForegroundColor = ConsoleColor.Red;
                 Console.WriteLine($"\tError moving file: {ex.Message}");
                 Console.ForegroundColor = ConsoleColor.Gray;
-            }
-        }
+            }// end of catch
+        }// end of MoveFileToTargetFolder
 
         /*
          * A method that move move a file to saparate folder and conver it the file to .docx format. 
@@ -195,18 +203,18 @@ namespace WordAutomation
                     doc.SaveToFile(targetFilePath, FileFormat.Docx);                                                                               // Covert original File to .docx format
                     isMoved = true;                                                                                                                 
                     imageCount = 0;
-                }
+                }// end of if-statement not isMoved
                 Console.ForegroundColor = ConsoleColor.Green;
                 Console.WriteLine($"\t\tFile \"{Path.GetFileName(filePath)}\" converted to .docx and saved in: {Path.GetFileName(targetFilePath)}");
                 Console.ForegroundColor = ConsoleColor.Gray;
-            }
+            }// end of try
             catch (Exception ex)
             {
                 Console.ForegroundColor = ConsoleColor.Red;
                 Console.WriteLine($"\t\tError converting file: {ex.Message}");
                 Console.ForegroundColor = ConsoleColor.Gray;
-            }
-        }
+            }// end of catch
+        }// end of ConvertToDocx
 
         /*
          * *****NOT USED*****
@@ -220,18 +228,17 @@ namespace WordAutomation
                 string destinationFilePath = Path.Combine(destinationFolderPath, fileName);
 
                 File.Copy(sourceFilePath, destinationFilePath, true); // Set overwrite to true to overwrite existing files
-
                 Console.ForegroundColor = ConsoleColor.Yellow;
                 Console.WriteLine($"\tFile \"{fileName}\" copied to {Path.GetFileName(destinationFolderPath)}");
                 Console.ForegroundColor = ConsoleColor.Gray;
-            }
+            }// end of try
             catch (Exception ex)
             {
                 Console.ForegroundColor = ConsoleColor.Red;
                 Console.WriteLine($"Error copying file: {ex.Message}");
                 Console.ForegroundColor = ConsoleColor.Gray;
-            }
-        }
+            }// end of catch
+        }// end of CreateCopyOfFile
 
         static void Main(string[] args)
         {
