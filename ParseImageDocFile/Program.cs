@@ -230,7 +230,7 @@ namespace WordAutomation
         }// end of ConvertToDocx
 
         /*
-         * *****NOT USED*****
+         *                              *****NOT USED*****
          * A method to copy files being open and create a copy on the backup folder.
          */
         private void CreateCopyOfFile(string sourceFilePath, string destinationFolderPath)
