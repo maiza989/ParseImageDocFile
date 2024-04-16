@@ -146,7 +146,7 @@ namespace WordAutomation
                                 Console.ForegroundColor = ConsoleColor.DarkCyan;
                                 Console.WriteLine($"\tChanged Image \"{imageCount}\" in file: {Path.GetFileName(filePath)}");
                                 Console.ForegroundColor = ConsoleColor.Gray;
-                            }
+                            }// end of inner if-statement 
                         }// end of if-statement
                         else if(docObj.DocumentObjectType == DocumentObjectType.TextBox) 
                         {
