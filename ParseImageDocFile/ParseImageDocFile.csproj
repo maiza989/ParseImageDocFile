@@ -14,8 +14,4 @@
     <PackageReference Include="System.Security.Cryptography.Xml" Version="8.0.0" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="TestSamples\" />
-  </ItemGroup>
-
 </Project>
