@@ -13,11 +13,11 @@ namespace WordAutomation
 {
     class Program
     {
-        private string imagePath = @"\\10.0.2.12\users\malghamgham\Desktop\My work - Maitham\GIF\Logo\Logo Final Small-Edited.jpg";                                             // Image Path                                               
-        private string folderPath = @"\\10.0.2.12\users\malghamgham\Desktop\My work - Maitham\Projects\TestFolder";                                                             // Original Word Documents Folder
-        private string backupPath = @"\\10.0.2.12\users\malghamgham\Desktop\My work - Maitham\Projects\TestFolder\Backup";                                                      // **Optional** Destination path for file backup 
-        private string errorTextboxFolderPath = @"\\10.0.2.12\users\malghamgham\Desktop\My work - Maitham\Projects\TestFolder\ErrorTest\TextboxError";                          // **Optional** Destination path for file with Textbox in them
-        private string errorNullRefFolderPath = @"\\10.0.2.12\users\malghamgham\Desktop\My work - Maitham\Projects\TestFolder\ErrorTest\NullReferenceError";                    // **Optional** Destination path for file throwing null reference error
+        private string imagePath = @"\\lmusrdata\User_Profiles\malghamgham\Desktop\My work - Maitham\GIF\Logo\Logo Final Small-Edited.jpg";                                             // Image Path                                               
+        private string folderPath = @"\\lmusrdata\User_Profiles\malghamgham\Desktop\My work - Maitham\Projects\TestFolder";                                                             // Original Word Documents Folder
+       // private string backupPath = @"\\10.0.2.12\users\malghamgham\Desktop\My work - Maitham\Projects\TestFolder\Backup";                                                              // **Optional** Destination path for file backup 
+        private string errorTextboxFolderPath = @"\\lmusrdata\User_Profiles\malghamgham\Desktop\My work - Maitham\Projects\TestFolder\ErrorTest\TextboxError";                          // **Optional** Destination path for file with Textbox in them
+        private string errorNullRefFolderPath = @"\\lmusrdata\User_Profiles\malghamgham\Desktop\My work - Maitham\Projects\TestFolder\ErrorTest\NullReferenceError";                    // **Optional** Destination path for file throwing null reference error
 
         int imageCount = 0;                                                                                                                                                     // Image changed counter
         int fileCount = 0;                                                                                                                                                      // File processed counter
