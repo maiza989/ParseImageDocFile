@@ -4,11 +4,23 @@
  * 
  *                                                                                          --Spire.doc Attempt--
  */
+using System.Drawing;
+
+using System.Threading.Tasks;
+
 using Spire.Doc;
 using Spire.Doc.Documents;
 using Spire.Doc.Fields;
-using System.Drawing;
+using Document = Spire.Doc.Document;
+using Section = Spire.Doc.Section;
+using Paragraph = Spire.Doc.Documents.Paragraph;
+using Field = Spire.Doc.Fields.Field;
 
+using Word = Microsoft.Office.Interop.Word;
+using Microsoft.Office;
+using Microsoft.Office.Interop.Word;
+
+using Aspose.Words;
 namespace WordAutomation
 {
     class Program
@@ -52,6 +64,13 @@ namespace WordAutomation
                         {
                             ProcessDocument(filePath);                                                                               // Process each files in the folder
                         }// end of foreach
+
+                        /*  Parallel.ForEach(files, new ParallelOptions { MaxDegreeOfParallelism = 2 }, filePath =>
+                          {
+                              // Create new instance per thread to avoid shared state
+                              var programInstance = new Program();
+                              programInstance.ProcessDocument(filePath);
+                          });*/
                     }
                     else
                     {
@@ -72,19 +91,39 @@ namespace WordAutomation
                 Console.ForegroundColor = ConsoleColor.Gray;
             }// end of Catch
         }// end of Run
-
         /*
          * A method that start the file processing of each section of the word documents.
          */
         private void ProcessDocument(string filePath)
         {
+            bool wasOriginallyDoc = false;
+            string originalDocPath = filePath;
+            string tempDocxPath = filePath;
             fileCount ++;
             Console.WriteLine($"\nProcessing File \"{fileCount}\": {Path.GetFileName(filePath)}");
             try
             {
-                if( doc != null && doc.Sections != null )
+                if( doc != null && doc.Sections != null)
                 {
-                    doc.LoadFromFile(filePath);                                                                                                                             // Load file into Document Object
+
+                    // Convert .doc to .docx before processing
+                    if (filePath.EndsWith(".doc", StringComparison.OrdinalIgnoreCase) &&
+                        !filePath.EndsWith(".docx", StringComparison.OrdinalIgnoreCase))
+                    {
+                        Console.ForegroundColor = ConsoleColor.Yellow;
+                        Console.WriteLine($"\tConverting {Path.GetFileName(filePath)} to .docx for safe editing...");
+                        Console.ForegroundColor = ConsoleColor.Gray;
+
+
+                        //ConvertDocToDocxAspose(filePath); // Your helper
+                        ConvertDocToDocxInterop(filePath);
+                        filePath = Path.ChangeExtension(filePath, ".docx");
+                        wasOriginallyDoc = true;
+                    }
+
+                    // Now safely load .docx using Spire
+                    doc = new Document();
+                    doc.LoadFromFile(filePath);
                     //CreateCopyOfFile(folderPath, backupPath);
 
                     foreach (Section section in doc.Sections)
@@ -100,12 +139,28 @@ namespace WordAutomation
                     if(!isMoved)                                                                                                                                            // If isMoved is true dont save file. This is a check for if file was moved an converted to .docx 
                     {
                         FileFormat fileFormat = filePath.EndsWith(".docx", StringComparison.OrdinalIgnoreCase) ? FileFormat.Docx : FileFormat.Doc;                          // Determine the file format based on the file extension
-                        doc.SaveToFile(filePath, fileFormat);  
+                        doc.SaveToFile(filePath, fileFormat);
+                        
+                        
                     }// end of if-statement isMoved
+                    if (wasOriginallyDoc)
+                    {
+                        Console.ForegroundColor = ConsoleColor.Yellow;
+                        Console.WriteLine($"\tReverting edited file back to .doc...");
+                        Console.ForegroundColor = ConsoleColor.Gray;
+/*
+                        originalDocPath = Path.ChangeExtension(filePath, ".doc"); // .docx -> .doc
+                        doc.LoadFromFile(filePath); // Reload just in case
+                        doc.SaveToFile(originalDocPath, FileFormat.Doc);
+                        File.Delete(filePath); // Delete the temporary .docx*/
+                        
+                        ConvertDocxToDocInterop(filePath);
+                    }
 
                     Console.WriteLine($"\t\t\tClosed File: {Path.GetFileName(filePath)}");
                     imageCount = 0;
                     isMoved = false;
+                    wasOriginallyDoc = false;                                                                                                                  
                 }// end of If-Statement
             }// end of Try
             catch (NullReferenceException ex)
@@ -130,14 +185,16 @@ namespace WordAutomation
         {
             try
              {
-                foreach (Paragraph paragraph in section.Paragraphs)
+                for (int i = 0; i < section.Paragraphs.Count; i++) // Iterate using index to avoid collection modification issues
                 {
-                    foreach (DocumentObject docObj in paragraph.ChildObjects)
+                    Paragraph paragraph = section.Paragraphs[i];
+                    for (int j = 0; j < paragraph.ChildObjects.Count; j++) // Iterate using index to avoid collection modification issues
                     {
+                        DocumentObject docObj = paragraph.ChildObjects[j];
                         if (docObj.DocumentObjectType == DocumentObjectType.Picture)
-                        {  
+                        {
                             DocPicture newPicture = docObj as DocPicture;                                                                           // Create a new DocPicture with the desired image                     
-                            if(newPicture.Width < imageMaxWidth && newPicture.Width > imageMinWidth 
+                            if (newPicture.Width < imageMaxWidth && newPicture.Width > imageMinWidth
                                 && newPicture.Height < imageMaxHeight && newPicture.Height > imageMinHeight)                                        // Only change the image the width is bigger than 90px and smaller than 250px and height smaller than 100px and larger than 50px
                             {
                                 isImageChanged = true;
@@ -146,11 +203,12 @@ namespace WordAutomation
                                 Console.ForegroundColor = ConsoleColor.DarkCyan;
                                 Console.WriteLine($"\tChanged Image \"{imageCount}\" in file: {Path.GetFileName(filePath)}");
                                 Console.ForegroundColor = ConsoleColor.Gray;
+                                continue;                                                                                                           // Continue to the next iteration if the image is changed
                             }// end of inner if-statement 
                         }// end of if-statement
-                        else if(docObj.DocumentObjectType == DocumentObjectType.TextBox) 
+                        else if (docObj.DocumentObjectType == DocumentObjectType.TextBox)
                         {
-                            Console.WriteLine($"\t\tTextbox detected in file: {Path.GetFileName(filePath)}.");  
+                            Console.WriteLine($"\t\tTextbox detected in file: {Path.GetFileName(filePath)}.");
                             ConvertToDocx(filePath);                                                                                                // Convert the file to .docx
                             isMoved = true;
                             return;
@@ -252,6 +310,62 @@ namespace WordAutomation
                 Console.ForegroundColor = ConsoleColor.Gray;
             }// end of catch
         }// end of CreateCopyOfFile
+
+        private bool IsBarcodeField(string fieldText)
+        {
+            fieldText = fieldText.Trim();
+
+            // Print debugging info
+            // Console.WriteLine($"\t\tChecking merge field: \"{fieldText}\"");
+
+            // Check if both Fileno and LLCODE exist in the same field
+            return fieldText.Equals("MERGEFIELD FILENO") && fieldText.Equals("MERGEFIELD LLCODE");
+        }
+
+        void ConvertDocToDocxInterop(string docPath)
+        {
+            var wordApp = new Word.Application();
+            wordApp.Visible = false;
+
+            var doc = wordApp.Documents.Open(docPath);
+            string newPath = Path.ChangeExtension(docPath, ".docx");
+
+            doc.SaveAs2(newPath, Word.WdSaveFormat.wdFormatXMLDocument);
+            doc.Close(false);
+            wordApp.Quit();
+
+            File.Delete(docPath); // delete original .doc
+        }
+
+        void ConvertDocxToDocInterop(string docxPath)
+        {
+            var wordApp = new Word.Application();
+            wordApp.Visible = false;
+
+            var doc = wordApp.Documents.Open(docxPath);
+            string originalDocPath = Path.ChangeExtension(docxPath, ".doc");
+
+            doc.SaveAs2(originalDocPath, Word.WdSaveFormat.wdFormatDocument);
+            doc.Close(false);
+            wordApp.Quit();
+
+            File.Delete(docxPath); // delete temporary .docx
+        }
+       /* void ConvertDocToDocxAspose(string docPath)
+        {
+            var doc = new Aspose.Words.Document(docPath);
+            string newPath = System.IO.Path.ChangeExtension(docPath, ".docx");
+            doc.Save(newPath, Aspose.Words.SaveFormat.Docx);
+            System.IO.File.Delete(docPath);
+        }
+
+        void ConvertDocxToDocAspose(string docxPath)
+        {
+            var doc = new Aspose.Words.Document(docxPath);
+            string originalDocPath = System.IO.Path.ChangeExtension(docxPath, ".doc");
+            doc.Save(originalDocPath, Aspose.Words.SaveFormat.Doc);
+            System.IO.File.Delete(docxPath);
+        }*/
 
         static void Main(string[] args)
         {
